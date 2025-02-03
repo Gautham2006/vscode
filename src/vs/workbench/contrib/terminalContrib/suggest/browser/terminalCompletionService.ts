@@ -65,7 +65,7 @@ export interface TerminalResourceRequestConfig {
 	foldersRequested?: boolean;
 	cwd?: URI;
 	pathSeparator: string;
-	shouldNormalize?: boolean;
+	shouldNormalizePath?: boolean;
 	env?: { [key: string]: string | null | undefined };
 }
 
@@ -208,7 +208,7 @@ export class TerminalCompletionService extends Disposable implements ITerminalCo
 	}
 
 	async resolveResources(resourceRequestConfig: TerminalResourceRequestConfig, promptValue: string, cursorPosition: number, provider: string, capabilities: ITerminalCapabilityStore): Promise<ITerminalCompletion[] | undefined> {
-		if (resourceRequestConfig.shouldNormalize) {
+		if (resourceRequestConfig.shouldNormalizePath) {
 			// Make sure the right path separator is used
 			promptValue = promptValue.replaceAll(/[\\/]/g, resourceRequestConfig.pathSeparator);
 		}
@@ -222,7 +222,7 @@ export class TerminalCompletionService extends Disposable implements ITerminalCo
 		const resourceCompletions: ITerminalCompletion[] = [];
 		const cursorPrefix = promptValue.substring(0, cursorPosition);
 
-		const useBackslash = resourceRequestConfig.shouldNormalize;
+		const useBackslash = resourceRequestConfig.shouldNormalizePath;
 
 		// The last word (or argument). When the cursor is following a space it will be the empty
 		// string
@@ -241,7 +241,7 @@ export class TerminalCompletionService extends Disposable implements ITerminalCo
 		// this will be `./src/`. This also always ends in the path separator if it is not the empty
 		// string and path separators are normalized on Windows.
 		let lastWordFolder = lastSlashIndex === -1 ? '' : lastWord.slice(0, lastSlashIndex + 1);
-		if (resourceRequestConfig.shouldNormalize) {
+		if (resourceRequestConfig.shouldNormalizePath) {
 			lastWordFolder = lastWordFolder.replaceAll('/', '\\');
 		}
 
