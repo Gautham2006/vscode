@@ -173,7 +173,7 @@ export abstract class BasePromptParser<T extends IPromptContentsProvider> extend
 
 		this._register(
 			this.promptContentsProvider.onContentChanged((streamOrError) => {
-				// process the the received message
+				// process the received message
 				this.onContentsChanged(streamOrError, seenReferences);
 
 				// indicate that we've received at least one `onContentChanged` event

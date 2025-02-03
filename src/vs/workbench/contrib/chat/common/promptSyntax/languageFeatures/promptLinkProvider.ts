@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IPromptSyntaxService } from '../types.js';
+import { IPromptSyntaxService } from '../service/types.js';
 import { assert } from '../../../../../../base/common/assert.js';
 import { ITextModel } from '../../../../../../editor/common/model.js';
 import { assertDefined } from '../../../../../../base/common/types.js';
