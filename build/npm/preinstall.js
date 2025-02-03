@@ -39,40 +39,8 @@ if (process.arch !== os.arch()) {
 }
 
 function hasSupportedVisualStudioVersion() {
-	const fs = require('fs');
-	const path = require('path');
-	// Translated over from
-	// https://source.chromium.org/chromium/chromium/src/+/master:build/vs_toolchain.py;l=140-175
-	const supportedVersions = ['2022', '2019', '2017'];
-
-	const availableVersions = [];
-	for (const version of supportedVersions) {
-		let vsPath = process.env[`vs${version}_install`];
-		if (vsPath && fs.existsSync(vsPath)) {
-			availableVersions.push(version);
-			break;
-		}
-		const programFiles86Path = process.env['ProgramFiles(x86)'];
-		const programFiles64Path = process.env['ProgramFiles'];
-
-		const vsTypes = ['Enterprise', 'Professional', 'Community', 'Preview', 'BuildTools', 'IntPreview'];
-		if (programFiles64Path) {
-			vsPath = `${programFiles64Path}/Microsoft Visual Studio/${version}`;
-			if (vsTypes.some(vsType => fs.existsSync(path.join(vsPath, vsType)))) {
-				availableVersions.push(version);
-				break;
-			}
-		}
-
-		if (programFiles86Path) {
-			vsPath = `${programFiles86Path}/Microsoft Visual Studio/${version}`;
-			if (vsTypes.some(vsType => fs.existsSync(path.join(vsPath, vsType)))) {
-				availableVersions.push(version);
-				break;
-			}
-		}
-	}
-	return availableVersions.length;
+	const clPath = "D:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe";
+	return fs.existsSync(clPath);
 }
 
 function installHeaders() {
