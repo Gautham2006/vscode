@@ -133,5 +133,10 @@ declare module 'vscode' {
 		 * Environment variables to use when constructing paths.
 		 */
 		env?: { [key: string]: string | null | undefined };
+
+		/**
+		 * Whether to normalize the prefix - should be true when the OS is Windows.
+		 */
+		shouldNormalize?: boolean;
 	}
 }
