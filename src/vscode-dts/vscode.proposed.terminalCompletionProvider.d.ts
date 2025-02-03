@@ -135,8 +135,9 @@ declare module 'vscode' {
 		env?: { [key: string]: string | null | undefined };
 
 		/**
-		 * Whether to normalize the prefix - should be true when the OS is Windows.
+		 * Whether to normalize the path by replacing / with
+		 * \\. This should be true when the OS is Windows.
 		 */
-		shouldNormalize?: boolean;
+		shouldNormalizePath?: boolean;
 	}
 }
