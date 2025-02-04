@@ -679,6 +679,10 @@ export class TestLayoutService implements IWorkbenchLayoutService {
 	updateWindowMaximizedState(targetWindow: Window, maximized: boolean): void { }
 	getVisibleNeighborPart(part: Parts, direction: Direction): Parts | undefined { return undefined; }
 	focus() { }
+
+	initializeSplitLayout(): void {
+		// No-op implementation for tests
+	}
 }
 
 const activeViewlet: PaneComposite = {} as any;

@@ -326,6 +326,11 @@ export interface IWorkbenchLayoutService extends ILayoutService {
 	 * Returns the next visible view part in a given direction in the main window.
 	 */
 	getVisibleNeighborPart(part: Parts, direction: Direction): Parts | undefined;
+
+	/**
+	 * Initialize the split layout
+	 */
+	initializeSplitLayout(): void;
 }
 
 export function shouldShowCustomTitleBar(configurationService: IConfigurationService, window: Window, menuBarToggled?: boolean): boolean {

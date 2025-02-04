@@ -5,7 +5,7 @@
 
 import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from '../../base/common/lifecycle.js';
 import { Event, Emitter } from '../../base/common/event.js';
-import { EventType, addDisposableListener, getClientArea, position, size, IDimension, isAncestorUsingFlowTo, computeScreenAwareSize, getActiveDocument, getWindows, getActiveWindow, isActiveDocument, getWindow, getWindowId, getActiveElement } from '../../base/browser/dom.js';
+import { EventType, addDisposableListener, getClientArea, IDimension, isAncestorUsingFlowTo, computeScreenAwareSize, getActiveDocument, getWindows, getActiveWindow, isActiveDocument, getWindow, getWindowId, getActiveElement } from '../../base/browser/dom.js';
 import { onDidChangeFullscreen, isFullscreen, isWCOEnabled } from '../../base/browser/browser.js';
 import { IWorkingCopyBackupService } from '../services/workingCopy/common/workingCopyBackup.js';
 import { isWindows, isLinux, isMacintosh, isWeb, isIOS } from '../../base/common/platform.js';
@@ -298,6 +298,31 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		protected readonly parent: HTMLElement
 	) {
 		super();
+		
+		// Create white background on left side first
+		const leftContainer = document.createElement('div');
+		leftContainer.style.position = 'fixed';
+		leftContainer.style.left = '0';
+		leftContainer.style.top = '0';
+		leftContainer.style.width = '50%';
+		leftContainer.style.height = '100vh';
+		leftContainer.style.background = 'white';
+		leftContainer.style.zIndex = '0';
+		document.body.appendChild(leftContainer);
+
+		// Then initialize main container
+		this._mainContainerDimension = {
+			width: parent.clientWidth * 0.5,
+			height: parent.clientHeight
+		};
+
+		// Set main container styles directly
+		this.mainContainer.style.position = 'fixed';
+		this.mainContainer.style.right = '0';
+		this.mainContainer.style.top = '0';
+		this.mainContainer.style.width = '50%';
+		this.mainContainer.style.height = '100vh';
+		this.mainContainer.style.zIndex = '1';
 	}
 
 	protected initLayout(accessor: ServicesAccessor): void {
@@ -1587,21 +1612,25 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 	layout(): void {
 		if (!this.disposed) {
-			this._mainContainerDimension = getClientArea(this.state.runtime.mainWindowFullscreen ?
-				mainWindow.document.body : 	// in fullscreen mode, make sure to use <body> element because
-				this.parent					// in that case the workbench will span the entire site
-			);
-			this.logService.trace(`Layout#layout, height: ${this._mainContainerDimension.height}, width: ${this._mainContainerDimension.width}`);
+			// Force the main container to right half
+			this.mainContainer.style.position = 'fixed';
+			this.mainContainer.style.right = '0';
+			this.mainContainer.style.top = '0';
+			this.mainContainer.style.width = '50%';
+			this.mainContainer.style.height = '100vh';
 
-			position(this.mainContainer, 0, 0, 0, 0, 'relative');
-			size(this.mainContainer, this._mainContainerDimension.width, this._mainContainerDimension.height);
+			// Update internal dimension tracking
+			this._mainContainerDimension = {
+				width: window.innerWidth * 0.5,
+				height: window.innerHeight
+			};
 
-			// Layout the grid widget
-			this.workbenchGrid.layout(this._mainContainerDimension.width, this._mainContainerDimension.height);
-			this.initialized = true;
+			// Call original layout logic with new dimensions
+			if (this.workbenchGrid) {
+				this.workbenchGrid.layout(this._mainContainerDimension.width, this._mainContainerDimension.height);
+			}
 
-			// Emit as event
-			this.handleContainerDidLayout(this.mainContainer, this._mainContainerDimension);
+			console.log('Layout updated:', this._mainContainerDimension);
 		}
 	}
 
@@ -2509,6 +2538,41 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		super.dispose();
 
 		this.disposed = true;
+	}
+
+	public initializeSplitLayout(): void {
+		console.log('Initializing split layout...');
+		const fullWidth = window.innerWidth;
+		console.log('Window width:', fullWidth);
+
+		// Force a specific z-index to ensure our container is on top
+		this.mainContainer.style.zIndex = '1';
+		this.mainContainer.style.width = `${fullWidth * 0.5}px`;
+		this.mainContainer.style.position = 'absolute';
+		this.mainContainer.style.right = '0';
+		this.mainContainer.style.top = '0';
+		this.mainContainer.style.height = '100%';
+		
+		// Add a white container for the left side
+		const leftContainer = document.createElement('div');
+		leftContainer.style.position = 'absolute';
+		leftContainer.style.left = '0';
+		leftContainer.style.top = '0';
+		leftContainer.style.width = `${fullWidth * 0.5}px`;
+		leftContainer.style.height = '100%';
+		leftContainer.style.background = 'white';
+		leftContainer.style.zIndex = '0';
+		
+		document.body.appendChild(leftContainer);
+		
+		console.log('Main container styles:', {
+			width: this.mainContainer.style.width,
+			position: this.mainContainer.style.position,
+			right: this.mainContainer.style.right
+		});
+
+		// Force a layout update
+		this.layout();
 	}
 }
 
