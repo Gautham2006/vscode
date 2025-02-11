@@ -5,7 +5,7 @@
 
 import '../../platform/update/common/update.config.contribution.js';
 
-import { app, dialog } from 'electron';
+import { app, dialog, BrowserView, BrowserWindow, ipcMain } from 'electron';
 import { unlinkSync, promises } from 'fs';
 import { URI } from '../../base/common/uri.js';
 import { coalesce, distinct } from '../../base/common/arrays.js';
@@ -598,3 +598,64 @@ class CodeMain {
 // Main Startup
 const code = new CodeMain();
 code.main();
+
+// Add these handlers to your main process
+let browserView: BrowserView | null = null;
+
+ipcMain.handle('init-browser', (event) => {
+	const window = BrowserWindow.fromWebContents(event.sender);
+	if (!window) return;
+
+	browserView = new BrowserView({
+		webPreferences: {
+			nodeIntegration: false,
+			contextIsolation: true,
+			sandbox: true,
+			webSecurity: false
+		}
+	});
+
+	window.addBrowserView(browserView);
+
+	// Position the browser view in the left half
+	const bounds = window.getBounds();
+	browserView.setBounds({
+		x: 10, // Add some padding
+		y: 100, // Leave space for URL bar
+		width: Math.floor(bounds.width * 0.5) - 20, // Account for padding
+		height: bounds.height - 300 // Leave space for logs
+	});
+
+	// Load DevAgora by default
+	browserView.webContents.loadURL('https://google.com');
+
+	// Set up network request monitoring
+	browserView.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+		const timestamp = new Date().toISOString();
+		// Send the request details back to renderer
+		window.webContents.send('network-request', {
+			timestamp,
+			url: details.url,
+			method: details.method,
+			type: details.resourceType
+		});
+		callback({});
+	});
+
+	// Instead, allow navigations:
+	window.webContents.on('will-navigate', (evt, navigationUrl) => {
+		// console.log('[main] webContents#will-navigate: letting navigate happen =>', navigationUrl);
+		// evt.preventDefault(); // Removed, so navigation is now allowed
+	});
+});
+
+ipcMain.handle('navigate-browser', async (event, url) => {
+	if (!browserView) return;
+
+	try {
+		await browserView.webContents.loadURL(url);
+	} catch (error) {
+		console.error('Navigation error:', error);
+		throw error;
+	}
+});

@@ -79,6 +79,29 @@
 				},
 				"publisherDisplayName": "Microsoft"
 			}
+		},
+		{
+			"name": "mfolarin-vscode-web-browser-extension",
+			"version": "1.0.5",
+			"repo": "https://github.com/folarinmartins/vscode-web-browser",
+			"metadata": {
+				"id": "mfolarin-vscode-web-browser-extension",
+				"publisherId": {
+					"publisherId": "mfolarin",
+					"publisherName": "mfolarin",
+					"displayName": "Folarin Martins"
+				},
+				"publisherDisplayName": "Folarin Martins"
+			}
 		}
-	]
+	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "mfolarin-vscode-web-browser.openBrowser",
+				"title": "Open Web Browser",
+				"category": "Browser"
+			}
+		]
+	}
 }

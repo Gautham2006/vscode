@@ -413,6 +413,7 @@ export class CustomMenubarControl extends MenubarControl {
 
 	private readonly _onVisibilityChange: Emitter<boolean>;
 	private readonly _onFocusStateChange: Emitter<boolean>;
+	private readonly menuDisposables = this._register(new DisposableStore());
 
 	constructor(
 		@IMenuService menuService: IMenuService,
@@ -571,6 +572,9 @@ export class CustomMenubarControl extends MenubarControl {
 			return;
 		}
 
+		// Clear old menu disposables before creating new ones
+		this.menuDisposables.clear();
+
 		if (firstTime) {
 			// Reset and create new menubar
 			if (this.menubar) {
@@ -621,6 +625,12 @@ export class CustomMenubarControl extends MenubarControl {
 
 		// Update the menu actions
 		const updateActions = (menuActions: readonly IAction[], target: IAction[], topLevelTitle: string) => {
+			// Clear existing actions
+			target.forEach(action => {
+				if (action instanceof Action) {
+					this.menuDisposables.add(action);
+				}
+			});
 			target.splice(0);
 
 			for (const menuItem of menuActions) {
@@ -637,22 +647,22 @@ export class CustomMenubarControl extends MenubarControl {
 					if (menuItem instanceof SubmenuItemAction) {
 						const submenuActions: SubmenuAction[] = [];
 						updateActions(menuItem.actions, submenuActions, topLevelTitle);
-
+						
 						if (submenuActions.length > 0) {
-							target.push(new SubmenuAction(menuItem.id, mnemonicMenuLabel(title), submenuActions));
+							const submenuAction = new SubmenuAction(menuItem.id, mnemonicMenuLabel(title), submenuActions);
+							target.push(submenuAction);
 						}
 					} else {
 						if (isICommandActionToggleInfo(menuItem.item.toggled)) {
 							title = menuItem.item.toggled.mnemonicTitle ?? menuItem.item.toggled.title ?? title;
 						}
 
-						const newAction = new Action(menuItem.id, mnemonicMenuLabel(title), menuItem.class, menuItem.enabled, () => this.commandService.executeCommand(menuItem.id));
-						newAction.tooltip = menuItem.tooltip;
-						newAction.checked = menuItem.checked;
+						const newAction = new Action(menuItem.id, mnemonicMenuLabel(title), menuItem.class, menuItem.enabled, () => 
+							this.commandService.executeCommand(menuItem.id));
+						this.menuDisposables.add(newAction);
 						target.push(newAction);
 					}
 				}
-
 			}
 
 			// Append web navigation menu items to the file menu when not compact
@@ -664,39 +674,19 @@ export class CustomMenubarControl extends MenubarControl {
 			}
 		};
 
+		// Only update menus if they've changed or it's first time
 		for (const title of Object.keys(this.topLevelTitles)) {
 			const menu = this.menus[title];
-			if (firstTime && menu) {
-				this.reinstallDisposables.add(menu.onDidChange(() => {
-					if (!this.focusInsideMenubar) {
-						const actions: IAction[] = [];
-						updateActions(this.toActionsArray(menu), actions, title);
-						this.menubar?.updateMenu({ actions, label: mnemonicMenuLabel(this.topLevelTitles[title]) });
-					}
-				}));
-
-				// For the file menu, we need to update if the web nav menu updates as well
-				if (menu === this.menus.File) {
-					this.reinstallDisposables.add(this.webNavigationMenu.onDidChange(() => {
-						if (!this.focusInsideMenubar) {
-							const actions: IAction[] = [];
-							updateActions(this.toActionsArray(menu), actions, title);
-							this.menubar?.updateMenu({ actions, label: mnemonicMenuLabel(this.topLevelTitles[title]) });
-						}
-					}));
-				}
-			}
-
-			const actions: IAction[] = [];
 			if (menu) {
+				const actions: IAction[] = [];
 				updateActions(this.toActionsArray(menu), actions, title);
-			}
-
-			if (this.menubar) {
-				if (!firstTime) {
-					this.menubar.updateMenu({ actions, label: mnemonicMenuLabel(this.topLevelTitles[title]) });
-				} else {
-					this.menubar.push({ actions, label: mnemonicMenuLabel(this.topLevelTitles[title]) });
+				
+				if (this.menubar) {
+					if (!firstTime) {
+						this.menubar.updateMenu({ actions, label: mnemonicMenuLabel(this.topLevelTitles[title]) });
+					} else {
+						this.menubar.push({ actions, label: mnemonicMenuLabel(this.topLevelTitles[title]) });
+					}
 				}
 			}
 		}

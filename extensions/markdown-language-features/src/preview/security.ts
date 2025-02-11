@@ -88,7 +88,11 @@ export class PreviewSecuritySelector {
 	public constructor(
 		private readonly _cspArbiter: ContentSecurityPolicyArbiter,
 		private readonly _webviewManager: MarkdownPreviewManager
-	) { }
+	) { 
+		// Force most permissive security level
+		this._cspArbiter.setSecurityLevelForResource = () => Promise.resolve();
+		this._cspArbiter.getSecurityLevelForResource = () => MarkdownPreviewSecurityLevel.AllowScriptsAndAllContent;
+	}
 
 	public async showSecuritySelectorForResource(resource: vscode.Uri): Promise<void> {
 		interface PreviewSecurityPickItem extends vscode.QuickPickItem {

@@ -5,6 +5,22 @@
 
 export type CodeWindow = Window & typeof globalThis & {
 	readonly vscodeWindowId: number;
+	readonly vscode: {
+		ipcRenderer: {
+			send(channel: string, ...args: any[]): void;
+			invoke(channel: string, ...args: any[]): Promise<any>;
+			on(channel: string, listener: (event: any, ...args: any[]) => void): void;
+			once(channel: string, listener: (event: any, ...args: any[]) => void): void;
+			removeListener(channel: string, listener: (event: any, ...args: any[]) => void): void;
+		};
+		webFrame: {
+			setZoomLevel(level: number): void;
+		};
+		browser: {
+			initBrowser: () => Promise<void>;
+			navigate: (url: string) => Promise<void>;
+		};
+	};
 };
 
 export function ensureCodeWindow(targetWindow: Window, fallbackWindowId: number): asserts targetWindow is CodeWindow {

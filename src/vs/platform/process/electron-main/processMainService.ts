@@ -26,6 +26,7 @@ import { IStateService } from '../../state/node/state.js';
 import { UtilityProcess } from '../../utilityProcess/electron-main/utilityProcess.js';
 import { zoomLevelToZoomFactor } from '../../window/common/window.js';
 import { IWindowState } from '../../window/electron-main/window.js';
+import { createElectronBrowserWindow } from '../../../workbench/browser/electronBrowserWindow.js';
 
 const processExplorerWindowState = 'issue.processExplorerWindowState';
 
@@ -61,6 +62,7 @@ export class ProcessMainService implements IProcessMainService {
 		@ICSSDevelopmentService private readonly cssDevelopmentService: ICSSDevelopmentService
 	) {
 		this.registerListeners();
+		this.createPinnedBrowserWindow();
 	}
 
 	//#region Register Listeners
@@ -367,6 +369,23 @@ export class ProcessMainService implements IProcessMainService {
 
 	async closeProcessExplorer(): Promise<void> {
 		this.processExplorerWindow?.close();
+	}
+
+	private createPinnedBrowserWindow(): void {
+		const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+		// Create a window using the existing helper (or your own custom logic)...
+		const win = createElectronBrowserWindow();
+
+		// Force position and size on the left. For example, half screen width:
+		win.setBounds({
+			x: 0,
+			y: 0,
+			width: Math.floor(width / 2),
+			height
+		});
+
+		win.show();
 	}
 }
 

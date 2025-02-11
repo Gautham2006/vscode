@@ -533,7 +533,7 @@ function registerListeners(): void {
 	const openUrls: string[] = [];
 	const onOpenUrl =
 		function (event: { preventDefault: () => void }, url: string) {
-			event.preventDefault();
+			// event.preventDefault();
 
 			openUrls.push(url);
 		};

@@ -839,7 +839,7 @@ abstract class AbstractTreeView extends Disposable implements ITreeView {
 		}
 		const event: UIEvent = treeEvent.browserEvent;
 
-		event.preventDefault();
+		// event.preventDefault();
 		event.stopPropagation();
 
 		this.tree!.setFocus([node]);

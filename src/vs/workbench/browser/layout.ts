@@ -48,6 +48,20 @@ import { AuxiliaryBarPart } from './parts/auxiliarybar/auxiliaryBarPart.js';
 import { ITelemetryService } from '../../platform/telemetry/common/telemetry.js';
 import { IAuxiliaryWindowService } from '../services/auxiliaryWindow/browser/auxiliaryWindowService.js';
 import { CodeWindow, mainWindow } from '../../base/browser/window.js';
+import { ISandboxGlobals } from '../../base/parts/sandbox/electron-sandbox/globals.js';
+
+
+// Add type augmentation at the top of the file
+declare global {
+	interface Window {
+		vscode: ISandboxGlobals & {
+			browser: {
+				initBrowser: () => Promise<void>;
+				navigate: (url: string) => Promise<void>;
+			}
+		};
+	}
+}
 
 //#region Layout Implementation
 
@@ -132,6 +146,22 @@ export const TITLE_BAR_SETTINGS = [
 	TitleBarSetting.TITLE_BAR_STYLE,
 	TitleBarSetting.CUSTOM_TITLE_BAR_VISIBILITY,
 ];
+
+// const browserOptions = {
+//     width: 800,
+//     height: 600,
+//     webPreferences: {
+//         webSecurity: false,
+//         allowRunningInsecureContent: true,
+//         nodeIntegration: true,
+//         contextIsolation: false
+//     },
+//     // Visual options
+//     frame: true,
+//     show: true,
+//     backgroundColor: '#FFFFFF',
+//     titleBarStyle: 'default'
+// };
 
 export abstract class Layout extends Disposable implements IWorkbenchLayoutService {
 
@@ -298,31 +328,130 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		protected readonly parent: HTMLElement
 	) {
 		super();
-		
-		// Create white background on left side first
-		const leftContainer = document.createElement('div');
-		leftContainer.style.position = 'fixed';
-		leftContainer.style.left = '0';
-		leftContainer.style.top = '0';
-		leftContainer.style.width = '50%';
-		leftContainer.style.height = '100vh';
-		leftContainer.style.background = 'white';
-		leftContainer.style.zIndex = '0';
-		document.body.appendChild(leftContainer);
 
-		// Then initialize main container
+		console.log('[Browser] Initializing embedded browser...');
+
+		// Create browser container
+		const browserContainer = document.createElement('div');
+		browserContainer.style.position = 'fixed';
+		browserContainer.style.left = '0';
+		browserContainer.style.top = '0';
+		browserContainer.style.width = '50%';
+		browserContainer.style.height = '100vh';
+		browserContainer.style.background = '#ffffff';
+		browserContainer.style.zIndex = '0';
+		browserContainer.style.display = 'flex';
+		browserContainer.style.flexDirection = 'column';
+
+		// Create the browser frame (if not already created above)
+		const browserFrame = document.createElement('iframe');
+		browserFrame.style.flex = '1';
+		browserFrame.style.width = '100%';
+		browserFrame.style.height = '100%';
+		browserFrame.style.border = 'none';
+		browserFrame.style.background = '#fff';
+		browserFrame.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-downloads');
+		browserFrame.setAttribute('allow', 'fullscreen');
+		browserFrame.setAttribute('referrerpolicy', 'no-referrer');
+
+		// Handle navigation via a proxy service
+		const navigate = (input: string) => {
+			let url = input;
+			if (!url.includes('.') || url.includes(' ')) {
+				url = `https://www.google.com/search?q=${encodeURIComponent(url)}`;
+			} else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+				url = 'https://' + url;
+			}
+			const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+			console.log('[Browser] Setting iframe src to:', proxyUrl);
+			browserFrame.src = proxyUrl;
+			// Assuming urlBar will be defined in the new navBar section
+			urlBar.value = url;
+		};
+
+		// --- New Navigation Bar for Permanent Controls ---
+		const navBar = document.createElement('div');
+		navBar.id = 'permanentNavBar';
+		navBar.style.display = 'flex';
+		navBar.style.alignItems = 'center';
+		navBar.style.backgroundColor = '#f0f0f0';
+		navBar.style.padding = '5px';
+		navBar.style.borderBottom = '1px solid #ccc';
+
+		// Create Back Button
+		const backButton = document.createElement('button');
+		backButton.textContent = '←';
+		navBar.appendChild(backButton);
+
+		// Create Forward Button
+		const forwardButton = document.createElement('button');
+		forwardButton.textContent = '→';
+		navBar.appendChild(forwardButton);
+
+		// Create Reload Button
+		const reloadButton = document.createElement('button');
+		reloadButton.textContent = '↻';
+		navBar.appendChild(reloadButton);
+
+		// Create a permanent search bar (input field)
+		const urlBar = document.createElement('input');
+		urlBar.type = 'text';
+		urlBar.placeholder = 'Enter URL';
+		urlBar.style.flex = '1';
+		urlBar.style.marginLeft = '10px';
+		navBar.appendChild(urlBar);
+
+		// Wire up the navigation controls
+		backButton.onclick = () => {
+			console.log('[Browser] Back clicked');
+			browserFrame.contentWindow?.history.back();
+		};
+
+		forwardButton.onclick = () => {
+			console.log('[Browser] Forward clicked');
+			browserFrame.contentWindow?.history.forward();
+		};
+
+		reloadButton.onclick = () => {
+			console.log('[Browser] Reload clicked');
+			browserFrame.src = browserFrame.src;
+		};
+
+		urlBar.addEventListener('keypress', (e) => {
+			if (e.key === 'Enter') {
+				navigate(urlBar.value);
+			}
+		});
+
+		// Clear previous header elements (if any) and append new navBar and browser frame.
+		browserContainer.innerHTML = '';
+		browserContainer.style.display = 'flex';
+		browserContainer.style.flexDirection = 'column';
+
+		browserContainer.appendChild(navBar);
+		browserContainer.appendChild(browserFrame);
+
+		// Initial navigation
+		navigate('https://example.com');
+
+		// Add the browser container to the parent element
+		parent.appendChild(browserContainer);
+
+		// Initialize main container (VS Code part) as before...
 		this._mainContainerDimension = {
 			width: parent.clientWidth * 0.5,
 			height: parent.clientHeight
 		};
 
-		// Set main container styles directly
+		// Set VS Code container styles
 		this.mainContainer.style.position = 'fixed';
 		this.mainContainer.style.right = '0';
 		this.mainContainer.style.top = '0';
 		this.mainContainer.style.width = '50%';
 		this.mainContainer.style.height = '100vh';
 		this.mainContainer.style.zIndex = '1';
+
+		// ... rest of the constructor code
 	}
 
 	protected initLayout(accessor: ServicesAccessor): void {
@@ -2552,7 +2681,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.mainContainer.style.right = '0';
 		this.mainContainer.style.top = '0';
 		this.mainContainer.style.height = '100%';
-		
+
 		// Add a white container for the left side
 		const leftContainer = document.createElement('div');
 		leftContainer.style.position = 'absolute';
@@ -2562,9 +2691,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		leftContainer.style.height = '100%';
 		leftContainer.style.background = 'white';
 		leftContainer.style.zIndex = '0';
-		
+
 		document.body.appendChild(leftContainer);
-		
+
 		console.log('Main container styles:', {
 			width: this.mainContainer.style.width,
 			position: this.mainContainer.style.position,
@@ -2861,7 +2990,7 @@ class LayoutStateModel extends Disposable {
 
 	private saveKeyToStorage<T extends StorageKeyType>(key: WorkbenchLayoutStateKey<T>): void {
 		const value = this.stateCache.get(key.name) as T;
-		this.storageService.store(`${LayoutStateModel.STORAGE_PREFIX}${key.name}`, typeof value === 'object' ? JSON.stringify(value) : value, key.scope, key.target);
+		this.storageService.store(`${LayoutStateModel.STORAGE_PREFIX}${key.name}  n`, typeof value === 'object' ? JSON.stringify(value) : value, key.scope, key.target);
 	}
 
 	private loadKeyFromStorage<T extends StorageKeyType>(key: WorkbenchLayoutStateKey<T>): T | undefined {
@@ -2880,3 +3009,35 @@ class LayoutStateModel extends Disposable {
 }
 
 //#endregion
+
+function initializeLayout() {
+	// Try to find the container with id 'browserContainer'
+	let browserContainer = document.getElementById('browserContainer');
+
+	// If not found, create one and style it to occupy the left half of the IDE
+	if (!browserContainer) {
+		console.warn('browserContainer element not found. Creating one.');
+		browserContainer = document.createElement('div');
+		browserContainer.id = 'browserContainer';
+		// Style the container to embed the browser on the left half.
+		browserContainer.style.position = 'absolute';
+		browserContainer.style.left = '0';
+		browserContainer.style.top = '0';
+		browserContainer.style.width = '50%';
+		browserContainer.style.height = '100%';
+		document.body.appendChild(browserContainer);
+	}
+
+	// Replace the placeholder (if any) with your integrated browser iframe.
+	browserContainer.innerHTML = `
+		<!-- Integrated Browser View -->
+		<iframe id="integratedBrowserFrame"
+			sandbox="allow-scripts allow-same-origin allow-forms"
+			style="width: 100%; height: 100%; border: none;"
+			src="https://www.google.com">
+		</iframe>
+	`;
+}
+
+// Call initializeLayout when the DOM is ready
+window.addEventListener('DOMContentLoaded', initializeLayout);

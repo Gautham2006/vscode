@@ -11,7 +11,7 @@ import { MarkdownContributionProvider } from '../markdownExtensions';
 import { escapeAttribute, getNonce } from '../util/dom';
 import { WebviewResourceProvider } from '../util/resources';
 import { MarkdownPreviewConfiguration, MarkdownPreviewConfigurationManager } from './previewConfig';
-import { ContentSecurityPolicyArbiter, MarkdownPreviewSecurityLevel } from './security';
+import { ContentSecurityPolicyArbiter } from './security';
 
 
 /**
@@ -230,20 +230,8 @@ export class MdDocumentRenderer {
 		resource: vscode.Uri,
 		nonce: string
 	): string {
-		const rule = provider.cspSource;
-		switch (this._cspArbiter.getSecurityLevelForResource(resource)) {
-			case MarkdownPreviewSecurityLevel.AllowInsecureContent:
-				return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' ${rule} http: https: data:; media-src 'self' ${rule} http: https: data:; script-src 'nonce-${nonce}'; style-src 'self' ${rule} 'unsafe-inline' http: https: data:; font-src 'self' ${rule} http: https: data:;">`;
-
-			case MarkdownPreviewSecurityLevel.AllowInsecureLocalContent:
-				return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' ${rule} https: data: http://localhost:* http://127.0.0.1:*; media-src 'self' ${rule} https: data: http://localhost:* http://127.0.0.1:*; script-src 'nonce-${nonce}'; style-src 'self' ${rule} 'unsafe-inline' https: data: http://localhost:* http://127.0.0.1:*; font-src 'self' ${rule} https: data: http://localhost:* http://127.0.0.1:*;">`;
-
-			case MarkdownPreviewSecurityLevel.AllowScriptsAndAllContent:
-				return '<meta http-equiv="Content-Security-Policy" content="">';
-
-			case MarkdownPreviewSecurityLevel.Strict:
-			default:
-				return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' ${rule} https: data:; media-src 'self' ${rule} https: data:; script-src 'nonce-${nonce}'; style-src 'self' ${rule} 'unsafe-inline' https: data:; font-src 'self' ${rule} https: data:;">`;
-		}
+		console.log('getCsp', provider, resource, nonce);
+		// Always return the most permissive CSP
+		return '<meta http-equiv="Content-Security-Policy" content="default-src * data: blob: filesystem: about: ws: wss: \'unsafe-inline\' \'unsafe-eval\'; script-src * data: blob: \'unsafe-inline\' \'unsafe-eval\'; connect-src * data: blob: \'unsafe-inline\'; img-src * data: blob: \'unsafe-inline\'; frame-src * data: blob: \'unsafe-inline\'; style-src * data: blob: \'unsafe-inline\'; font-src * data: blob: \'unsafe-inline\';">';
 	}
 }

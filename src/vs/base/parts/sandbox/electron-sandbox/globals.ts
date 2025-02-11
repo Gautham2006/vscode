@@ -115,13 +115,25 @@ export interface ISandboxContext {
 	resolveConfiguration(): Promise<ISandboxConfiguration>;
 }
 
+export interface ISandboxGlobals {
+	readonly ipcRenderer: Pick<import('./electronTypes.js').IpcRenderer, 'send' | 'invoke'>;
+	readonly webFrame: import('./electronTypes.js').WebFrame;
+	readonly process: ISandboxNodeProcess;
+	readonly context: ISandboxContext;
+	readonly webUtils: WebUtils;
+	readonly ipcMessagePort: IpcMessagePort;
+	readonly browser?: {
+		initBrowser: () => Promise<void>;
+		navigate: (url: string) => Promise<void>;
+	};
+}
+
 const vscodeGlobal = (globalThis as any).vscode;
 export const ipcRenderer: IpcRenderer = vscodeGlobal.ipcRenderer;
-export const ipcMessagePort: IpcMessagePort = vscodeGlobal.ipcMessagePort;
 export const webFrame: WebFrame = vscodeGlobal.webFrame;
 export const process: ISandboxNodeProcess = vscodeGlobal.process;
-export const context: ISandboxContext = vscodeGlobal.context;
 export const webUtils: WebUtils = vscodeGlobal.webUtils;
+export const ipcMessagePort: IpcMessagePort = vscodeGlobal.ipcMessagePort;
 
 /**
  * A set of globals only available to main windows that depend
@@ -134,13 +146,4 @@ export interface IMainWindowSandboxGlobals {
 	readonly process: ISandboxNodeProcess;
 	readonly context: ISandboxContext;
 	readonly webUtils: WebUtils;
-}
-
-/**
- * A set of globals that are available in all windows that either
- * depend on `preload.js` or `preload-aux.js`.
- */
-export interface ISandboxGlobals {
-	readonly ipcRenderer: Pick<import('./electronTypes.js').IpcRenderer, 'send' | 'invoke'>;
-	readonly webFrame: import('./electronTypes.js').WebFrame;
 }

@@ -5,66 +5,8 @@
 		<meta charset="utf-8" />
 		<meta
 			http-equiv="Content-Security-Policy"
-			content="
-				default-src
-					'none'
-				;
-				img-src
-					'self'
-					data:
-					blob:
-					vscode-remote-resource:
-					vscode-managed-remote-resource:
-					https:
-				;
-				media-src
-					'self'
-				;
-				frame-src
-					'self'
-					vscode-webview:
-				;
-				script-src
-					'self'
-					'unsafe-eval'
-					blob:
-					'nonce-0c6a828f1297'
-				;
-				style-src
-					'self'
-					'unsafe-inline'
-				;
-				connect-src
-					'self'
-					https:
-					ws:
-				;
-				font-src
-					'self'
-					vscode-remote-resource:
-					vscode-managed-remote-resource:
-					https://*.vscode-unpkg.net
-				;
-				require-trusted-types-for
-					'script'
-				;
-				trusted-types
-					vscode-bootstrapImportMap
-					amdLoader
-					cellRendererEditorText
-					defaultWorkerFactory
-					diffEditorWidget
-					diffReview
-					domLineBreaksComputer
-					dompurify
-					editorGhostText
-					editorViewLayer
-					notebookRenderer
-					stickyScrollViewLayer
-					tokenizeToString
-					notebookChatEditController
-				;
-		"/>
+			content="default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; script-src * data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src * data: blob: 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src * data: blob: 'unsafe-inline'; style-src * data: blob: 'unsafe-inline'; font-src * data: blob: 'unsafe-inline';"
+		/>
 	</head>
 
 	<body aria-label="">

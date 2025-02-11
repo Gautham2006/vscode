@@ -9,6 +9,12 @@ import { mainWindow } from '../../../base/browser/window.js';
 import { ISandboxConfiguration } from '../../../base/parts/sandbox/common/sandboxTypes.js';
 import { ISandboxGlobals, ipcRenderer, webFrame } from '../../../base/parts/sandbox/electron-sandbox/globals.js';
 import { zoomLevelToZoomFactor } from '../common/window.js';
+import { WebUtils } from '../../../base/parts/sandbox/electron-sandbox/electronTypes.js';
+import { ISandboxNodeProcess } from '../../../base/parts/sandbox/electron-sandbox/globals.js';
+import { IProcessEnvironment } from '../../../base/common/platform.js';
+
+// Get sandbox globals
+const globals = (globalThis as any).vscode?.context;
 
 export enum ApplyZoomTarget {
 	ACTIVE_WINDOW = 1,
@@ -41,16 +47,99 @@ export function applyZoom(zoomLevel: number, target: ApplyZoomTarget | Window): 
 	}
 }
 
+// Standard browser window options
+const browserWindowDefaults: ISandboxConfiguration = {
+	windowId: 1,
+	appRoot: globals?.configuration()?.appRoot || '',
+	userEnv: globals?.configuration()?.userEnv || {},
+	product: {
+		version: '1.x.y',
+		nameShort: 'Code',
+		nameLong: 'Visual Studio Code',
+		applicationName: 'code',
+		dataFolderName: '.vscode',
+		urlProtocol: 'vscode',
+		webEndpointUrlTemplate: 'https://{{uuid}}.vscode-cdn.net/',
+		serverApplicationName: 'code-server',
+		embedderIdentifier: 'desktop',
+		quality: 'stable',
+		extensionsGallery: {
+			serviceUrl: 'https://marketplace.visualstudio.com/_apis/public/gallery',
+			servicePPEUrl: 'https://marketplace.visualstudio.com/_apis/public/gallery',
+			searchUrl: 'https://marketplace.visualstudio.com/_apis/public/gallery/search',
+			itemUrl: 'https://marketplace.visualstudio.com/items',
+			publisherUrl: 'https://marketplace.visualstudio.com/publishers',
+			resourceUrlTemplate: 'https://marketplace.visualstudio.com/_apis/public/gallery/publishers/{publisher}/vsextensions/{name}/{version}/vspackage',
+			extensionUrlTemplate: 'https://marketplace.visualstudio.com/_apis/public/gallery/publishers/{publisher}/vsextensions/{name}/latest/vspackage',
+			controlUrl: '',
+			nlsBaseUrl: 'https://www.vscode.com/nls'
+		},
+		downloadUrl: 'https://code.visualstudio.com',
+		commit: undefined,
+		date: undefined,
+		checksums: undefined
+	},
+	zoomLevel: 0,
+	nls: {
+		messages: [],
+		language: undefined
+	}
+};
+
 function getGlobals(win: Window): ISandboxGlobals | undefined {
 	if (win === mainWindow) {
-		// main window
-		return { ipcRenderer, webFrame };
-	} else {
-		// auxiliary window
-		const auxiliaryWindow = win as unknown as { vscode: ISandboxGlobals };
-		if (auxiliaryWindow?.vscode?.ipcRenderer && auxiliaryWindow?.vscode?.webFrame) {
-			return auxiliaryWindow.vscode;
+		const webUtils: WebUtils = {
+			getPathForFile: (file: File) => file.path || ''
+		};
+
+		// Get the process object from sandbox globals
+		const sandboxProcess = (globalThis as any).vscode?.process;
+
+		if (!sandboxProcess) {
+			return undefined;
 		}
+
+		const sandboxNodeProcess: ISandboxNodeProcess = {
+			...sandboxProcess,
+			shellEnv: async (): Promise<IProcessEnvironment> => {
+				return sandboxProcess.env || {};
+			},
+			env: sandboxProcess.env || {},
+			on: (type: string, callback: Function) => {
+				if (typeof sandboxProcess.on === 'function') {
+					sandboxProcess.on(type, callback as (...args: any[]) => void);
+				}
+			}
+		};
+
+		return {
+			ipcRenderer,
+			webFrame,
+			process: sandboxNodeProcess,
+			context: {
+				configuration: () => ({
+					...browserWindowDefaults,
+					webPreferences: {
+						nodeIntegration: true,
+						contextIsolation: false,
+						webSecurity: false,
+						allowRunningInsecureContent: true
+					}
+				}),
+				resolveConfiguration: () => Promise.resolve(browserWindowDefaults)
+			},
+			webUtils,
+			ipcMessagePort: {
+				acquire: (responseChannel: string, nonce: string) => {}
+			},
+			browser: {
+				initBrowser: () => Promise.resolve(),
+				navigate: (url: string) => Promise.resolve()
+			}
+		};
+	} else if (win && (win as any).vscode) {
+		// auxiliary window
+		return (win as any).vscode;
 	}
 
 	return undefined;

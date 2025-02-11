@@ -65,7 +65,9 @@
     "extensions-ci": "node ./node_modules/gulp/bin/gulp.js extensions-ci",
     "extensions-ci-pr": "node ./node_modules/gulp/bin/gulp.js extensions-ci-pr",
     "perf": "node scripts/code-perf.js",
-    "update-build-ts-version": "npm install typescript@next && tsc -p ./build/tsconfig.build.json"
+    "update-build-ts-version": "npm install typescript@next && tsc -p ./build/tsconfig.build.json",
+    "build:preload": "tsc -p tsconfig-preload.json",
+    "postbuild:preload": "mv ./out-cjs/vs/base/parts/sandbox/electron-sandbox/preload.js ./out-cjs/vs/base/parts/sandbox/electron-sandbox/preload.cjs"
   },
   "dependencies": {
     "@microsoft/1ds-core-js": "^3.2.13",
@@ -95,6 +97,7 @@
     "@xterm/addon-webgl": "^0.19.0-beta.96",
     "@xterm/headless": "^5.6.0-beta.96",
     "@xterm/xterm": "^5.6.0-beta.96",
+    "embedded-react-browser": "^0.0.4",
     "http-proxy-agent": "^7.0.0",
     "https-proxy-agent": "^7.0.2",
     "jschardet": "3.1.4",
@@ -105,6 +108,8 @@
     "native-watchdog": "^1.4.1",
     "node-pty": "^1.1.0-beta22",
     "open": "^8.4.2",
+    "react": "^19.0.0",
+    "react-embedded-browser": "^0.1.1",
     "tas-client-umd": "0.2.0",
     "v8-inspect-profiler": "^0.1.1",
     "vscode-oniguruma": "1.7.0",
@@ -236,5 +241,24 @@
   },
   "optionalDependencies": {
     "windows-foreground-love": "0.5.0"
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mfolarinBrowser",
+          "title": "Browser",
+          "icon": "resources/browser.svg"
+        }
+      ]
+    },
+    "views": {
+      "mfolarinBrowser": [
+        {
+          "id": "mfolarin-vscode-web-browser.view",
+          "name": "Web Browser"
+        }
+      ]
+    }
   }
 }

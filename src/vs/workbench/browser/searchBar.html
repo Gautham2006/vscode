@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Search Bar</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 5px;
+      background: #f0f0f0;
+      font-family: sans-serif;
+    }
+    #searchInput {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <input id="searchInput" type="text" placeholder="Search or enter URL"/>
+  <script>
+    // When Enter is pressed, navigate using the input value.
+    const input = document.getElementById('searchInput');
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        let value = input.value.trim();
+        if (!value) { // Ignore empty search input
+          return;
+        }
+        // If the value does not appear to be a URL, assume it's a search query.
+        if (!value.includes('.') && !value.startsWith('http://') && !value.startsWith('https://')) {
+          value = `https://www.google.com/search?q=${encodeURIComponent(value)}`;
+        }
+        // Use the exposed electronAPI to navigate.
+        window.electronAPI.navigate(value);
+      }
+    });
+  </script>
+</body>
+</html>

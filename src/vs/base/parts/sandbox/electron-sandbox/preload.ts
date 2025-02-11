@@ -243,6 +243,18 @@
 			async resolveConfiguration(): Promise<ISandboxConfiguration> {
 				return resolveConfiguration;
 			}
+		},
+
+		// Add our browser API
+		browser: {
+			initBrowser: () => {
+				validateIPC('vscode:init-browser');
+				return ipcRenderer.invoke('vscode:init-browser');
+			},
+			navigate: (url: string) => {
+				validateIPC('vscode:navigate-browser');
+				return ipcRenderer.invoke('vscode:navigate-browser', url);
+			}
 		}
 	};
 
@@ -258,4 +270,11 @@
 	} else {
 		(window as any).vscode = globals;
 	}
+
+	// Remove or comment out the lines that create a BrowserWindow or BrowserView:
+	// const win = new BrowserWindow({ width: 800, height: 600 });
+	// const view = new BrowserView();
+	// win.setBrowserView(view);
+	// view.setBounds({ x: 0, y: 0, width: 800, height: 600 });
+	// view.webContents.loadURL('https://www.google.com');
 }());

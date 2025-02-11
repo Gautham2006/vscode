@@ -239,6 +239,8 @@ export class WebClientServer {
 	 * Handle HTTP requests for /
 	 */
 	private async _handleRoot(req: http.IncomingMessage, res: http.ServerResponse, parsedUrl: url.UrlWithParsedQuery): Promise<void> {
+		this._logService.info('[CSP Debug] Setting CSP headers in _handleRoot');
+		this._logService.info(`[CSP Debug] CSP value: default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';`);
 
 		const getFirstHeader = (headerName: string) => {
 			const val = req.headers[headerName];
@@ -412,25 +414,9 @@ export class WebClientServer {
 			return void res.end('Not found');
 		}
 
-		const webWorkerExtensionHostIframeScriptSHA = 'sha256-2Q+j4hfT09+1+imS46J2YlkCtHWQt0/BE79PXjJ0ZJ8=';
-
-		const cspDirectives = [
-			'default-src \'self\';',
-			'img-src \'self\' https: data: blob:;',
-			'media-src \'self\';',
-			`script-src 'self' 'unsafe-eval' ${WORKBENCH_NLS_BASE_URL ?? ''} blob: 'nonce-1nline-m4p' ${this._getScriptCspHashes(data).join(' ')} '${webWorkerExtensionHostIframeScriptSHA}' 'sha256-/r7rqQ+yrxt57sxLuQ6AMYcy/lUpvAIzHjIJt/OeLWU=' ${useTestResolver ? '' : `http://${remoteAuthority}`};`,  // the sha is the same as in src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
-			'child-src \'self\';',
-			`frame-src 'self' https://*.vscode-cdn.net data:;`,
-			'worker-src \'self\' data: blob:;',
-			'style-src \'self\' \'unsafe-inline\';',
-			'connect-src \'self\' ws: wss: https:;',
-			'font-src \'self\' blob:;',
-			'manifest-src \'self\';'
-		].join(' ');
-
 		const headers: http.OutgoingHttpHeaders = {
 			'Content-Type': 'text/html',
-			'Content-Security-Policy': cspDirectives
+			'Content-Security-Policy': "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';"
 		};
 		if (this._connectionToken.type !== ServerConnectionTokenType.None) {
 			// At this point we know the client has a valid cookie

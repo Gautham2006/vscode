@@ -408,9 +408,9 @@ export class CodeApplication extends Disposable {
 
 			// Block any in-page navigation
 			contents.on('will-navigate', event => {
-				this.logService.error('webContents#will-navigate: Prevented webcontent navigation');
+				// this.logService.error('webContents#will-navigate: Prevented webcontent navigation');
 
-				event.preventDefault();
+				// event.preventDefault();
 			});
 
 			// All Windows: only allow about:blank auxiliary windows to open
